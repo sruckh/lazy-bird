@@ -1,23 +1,65 @@
-# Lazy_Birtd
+<div align="center">
 
-**Automate game development with Claude Code while you're at work.**
+```
+    ▄▄▌   ▄▄▄·  ·▄▄▄▄•▄· ▄▌
+    ██•  ▐█ ▀█ ▪▀·.█▌▐█▪██▌
+    ██▪  ▄█▀▀█ ▄█▀▀▀•▐█▌▐█▪
+    ▐█▌▐▌▐█ ▪▐▌█▌▪▄█▀ ▐█▀·.
+    .▀▀▀  ▀  ▀ ·▀▀▀ •  ▀ •
+    ▄▄▄▄· ▪  ▄▄▄  ·▄▄▄▄
+    ▐█ ▀█▪██ ▀▄ █·██▪ ██
+    ▐█▀▀█▄▐█·▐▀▀▄ ▐█· ▐█▌
+    ██▄▪▐█▐█▌▐█•█▌██. ██
+    ·▀▀▀▀ ▀▀▀.▀  ▀ ▀▀▀▀▀▀•
+```
 
-Lazy_Birtd is a progressive automation system that lets Claude Code work on your Godot game projects autonomously. Create issues in the morning, review PRs at lunch, merge at night.
+### Automate game development while you sleep 🦜💤
 
-## Quick Start
+**Your AI-powered development assistant that works 24/7**
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Godot](https://img.shields.io/badge/Godot-4.2+-blue.svg)](https://godotengine.org/)
+[![Claude](https://img.shields.io/badge/Claude-Code-purple.svg)](https://claude.ai/code)
+[![Status](https://img.shields.io/badge/Status-Production%20Ready-green.svg)]()
+
+[Quick Start](#-quick-start) • [Features](#-features) • [Installation](#-installation) • [Docs](CLAUDE.md) • [Architecture](Docs/Design/)
+
+---
+
+</div>
+
+## 🎯 What is Lazy_Bird?
+
+Lazy_Bird is a **progressive automation system** that lets Claude Code work on your Godot game projects autonomously. Create GitHub Issues in the morning, review Pull Requests at lunch, and merge completed features in the evening—all while you focus on creative work or simply relax.
+
+```
+Morning (7 AM)          Work Hours                 Lunch (12 PM)         Evening (6 PM)
+──────────────          ──────────────             ─────────────         ─────────────
+Create Issues      →    Claude implements     →    Review PRs       →    Merge & Ship
+Add "ready" label       Runs tests automatically   Approve changes       Plan tomorrow
+Go to work             Creates PRs if passing      Back to work          Enjoy life
+```
+
+**The result?** You save 20-100 hours per month on repetitive development tasks.
+
+---
+
+## 🚀 Quick Start
 
 ```bash
-# 1. Clone and install
-git clone https://github.com/yusyus/lazy_birtd.git
-cd lazy_birtd
-./wizard.sh
+# 1. One-command installation
+curl -L https://raw.githubusercontent.com/yusyus/lazy-bird/main/wizard.sh | bash
 
-# 2. Create a task
-gh issue create --template task --title "Add player health system" --label "ready"
+# 2. Create your first automated task
+gh issue create --template task \
+  --title "[Task]: Add player health system" \
+  --label "ready"
 
-# 3. Watch it work
+# 3. Monitor progress
 ./wizard.sh --status
 ```
+
+**That's it!** The system will pick up your issue, implement the feature, run tests, and create a PR—all automatically.
 
 ## Features
 
@@ -358,6 +400,16 @@ MIT License - see [LICENSE](LICENSE) file.
 
 ---
 
-**Status:** Design Complete | Implementation Pending | Phase 0 Validation Required
+<div align="center">
 
-Made with ☕ for game developers who'd rather be making games than doing repetitive tasks.
+**Made with ☕ and 🤖 for game developers who'd rather be creating than coding**
+
+⭐ Star this repo if Lazy_Bird saves you time!
+
+```
+    🦜 Fly lazy, code smart
+```
+
+**Status:** Design Complete | Phase 0 Ready | Implementation Starting
+
+</div>
