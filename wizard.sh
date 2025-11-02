@@ -154,11 +154,250 @@ main() {
     read -p "Run Phase 0 validation now? [Y/n]: " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
-        info "Phase 0 validation will be implemented in next version"
-        info "For now, proceeding with manual checks..."
-        # TODO: Implement Phase 0 validation
-        # ./tests/phase0/validate-all.sh
+        # Get script directory
+        SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+        # Check if Phase 0 validation script exists
+        if [ -f "$SCRIPT_DIR/scripts/validate-claude.sh" ]; then
+            # We need a project path for validation
+            read -p "Enter path to test Godot project for validation: " TEST_PROJECT
+            TEST_PROJECT="${TEST_PROJECT/#\~/$HOME}"
+
+            if [ ! -d "$TEST_PROJECT" ]; then
+                warning "Test project not found, skipping Phase 0 validation"
+            else
+                info "Running Phase 0 validation..."
+                if "$SCRIPT_DIR/scripts/validate-claude.sh"; then
+                    success "Phase 0 validation passed!"
+                else
+                    error "Phase 0 validation failed"
+                    echo ""
+                    echo "You can:"
+                    echo "  1. Fix the issues and run wizard again"
+                    echo "  2. Skip validation: Continue anyway (not recommended)"
+                    read -p "Continue anyway? [y/N]: " -n 1 -r
+                    echo
+                    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                        exit 1
+                    fi
+                    warning "Continuing without validation"
+                fi
+            fi
+        else
+            warning "Phase 0 validation scripts not found, skipping..."
+        fi
+    else
+        warning "Skipping Phase 0 validation (not recommended)"
     fi
+
+    section "Configuration Questions"
+
+    echo "Please answer the following questions to configure your system."
+    echo ""
+
+    # Question 1: Project Location
+    read -p "❓ [1/8] Enter your Godot project path: " PROJECT_PATH
+    PROJECT_PATH="${PROJECT_PATH/#\~/$HOME}"
+
+    if [ ! -d "$PROJECT_PATH" ]; then
+        error "Directory does not exist: $PROJECT_PATH"
+        exit 1
+    fi
+
+    if [ ! -d "$PROJECT_PATH/.git" ]; then
+        error "Not a git repository: $PROJECT_PATH"
+        exit 1
+    fi
+
+    success "Project path: $PROJECT_PATH"
+    echo ""
+
+    # Question 2: Git Platform
+    echo "❓ [2/8] Which git platform are you using?"
+    echo "  1) GitHub"
+    echo "  2) GitLab"
+    read -p "Select [1-2]: " GIT_PLATFORM_CHOICE
+
+    case "$GIT_PLATFORM_CHOICE" in
+        1)
+            GIT_PLATFORM="github"
+            ;;
+        2)
+            GIT_PLATFORM="gitlab"
+            ;;
+        *)
+            GIT_PLATFORM="github"
+            warning "Invalid choice, defaulting to GitHub"
+            ;;
+    esac
+
+    success "Platform: $GIT_PLATFORM"
+    echo ""
+
+    # Question 3: Repository Details
+    read -p "❓ [3/8] Enter your repository URL: " REPOSITORY
+    success "Repository: $REPOSITORY"
+    echo ""
+
+    # Question 4: API Token
+    read -sp "❓ [4/8] Enter your $GIT_PLATFORM API token (input hidden): " API_TOKEN
+    echo ""
+
+    if [ -z "$API_TOKEN" ]; then
+        error "API token cannot be empty"
+        exit 1
+    fi
+
+    success "API token received (will be stored securely)"
+    echo ""
+
+    # Question 5: Testing Framework
+    echo "❓ [5/8] Which testing framework?"
+    echo "  1) gdUnit4 (recommended)"
+    echo "  2) GUT"
+    echo "  3) None (skip tests)"
+    read -p "Select [1-3]: " TEST_FRAMEWORK_CHOICE
+
+    case "$TEST_FRAMEWORK_CHOICE" in
+        1)
+            TEST_FRAMEWORK="gdUnit4"
+            ;;
+        2)
+            TEST_FRAMEWORK="GUT"
+            ;;
+        3)
+            TEST_FRAMEWORK="none"
+            ;;
+        *)
+            TEST_FRAMEWORK="gdUnit4"
+            ;;
+    esac
+
+    success "Test framework: $TEST_FRAMEWORK"
+    echo ""
+
+    # Question 6: Notifications
+    echo "❓ [6/8] Enable notifications?"
+    echo "  1) Yes, via ntfy.sh (recommended)"
+    echo "  2) No notifications"
+    read -p "Select [1-2]: " NOTIFICATIONS_CHOICE
+
+    case "$NOTIFICATIONS_CHOICE" in
+        1)
+            NOTIFICATIONS_ENABLED=true
+            read -p "Enter ntfy.sh topic (e.g., my-game-dev): " NTFY_TOPIC
+            ;;
+        *)
+            NOTIFICATIONS_ENABLED=false
+            NTFY_TOPIC=""
+            ;;
+    esac
+
+    success "Notifications: $([ "$NOTIFICATIONS_ENABLED" = true ] && echo "enabled ($NTFY_TOPIC)" || echo "disabled")"
+    echo ""
+
+    # Question 7: Resource Allocation
+    read -p "❓ [7/8] Maximum RAM per agent in GB [default: 10]: " MAX_RAM
+    MAX_RAM="${MAX_RAM:-10}"
+
+    if ! [[ "$MAX_RAM" =~ ^[0-9]+$ ]]; then
+        error "Invalid RAM value"
+        exit 1
+    fi
+
+    success "Agent RAM limit: ${MAX_RAM}GB"
+    echo ""
+
+    # Question 8: Starting Phase
+    echo "❓ [8/8] Starting Phase:"
+    echo "  Phase 1: Single Agent Sequential (recommended for initial setup)"
+    PHASE=1
+    success "Phase: $PHASE"
+    echo ""
+
+    section "Installation"
+
+    echo "Installing Lazy_Bird with your configuration..."
+    echo ""
+
+    # Create directory structure
+    info "Creating directory structure..."
+    mkdir -p "$HOME/.config/lazy_birtd/"{logs,data,queue,secrets}
+    success "Created ~/.config/lazy_birtd/"
+
+    # Generate configuration file
+    info "Generating configuration..."
+    cat > "$HOME/.config/lazy_birtd/config.yml" <<EOF
+# Lazy_Bird Configuration
+# Generated by wizard on $(date)
+
+git_platform: $GIT_PLATFORM
+repository: $REPOSITORY
+godot_project_path: $PROJECT_PATH
+poll_interval_seconds: 60
+
+phase: $PHASE
+max_concurrent_agents: 1
+agent_max_ram_gb: $MAX_RAM
+
+test_framework: $TEST_FRAMEWORK
+
+notifications:
+  enabled: $NOTIFICATIONS_ENABLED
+  method: $([ "$NOTIFICATIONS_ENABLED" = true ] && echo "ntfy" || echo "none")
+  topic: "$NTFY_TOPIC"
+EOF
+    success "Configuration saved to ~/.config/lazy_birtd/config.yml"
+
+    # Store API token securely
+    info "Storing API token securely..."
+    echo "$API_TOKEN" > "$HOME/.config/lazy_birtd/secrets/${GIT_PLATFORM}_token"
+    chmod 600 "$HOME/.config/lazy_birtd/secrets/${GIT_PLATFORM}_token"
+    chmod 700 "$HOME/.config/lazy_birtd/secrets"
+    success "API token stored (chmod 600)"
+
+    # Install systemd service for issue-watcher
+    info "Installing issue-watcher systemd service..."
+
+    # Get script directory
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+    # Create user systemd directory
+    mkdir -p "$HOME/.config/systemd/user"
+
+    # Generate systemd service file
+    cat > "$HOME/.config/systemd/user/issue-watcher.service" <<EOF
+[Unit]
+Description=Lazy_Bird Issue Watcher Service
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 $SCRIPT_DIR/scripts/issue-watcher.py
+Restart=always
+RestartSec=30
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
+EOF
+
+    # Reload systemd and enable service
+    systemctl --user daemon-reload
+    systemctl --user enable issue-watcher.service 2>&1 || warning "Failed to enable service"
+    systemctl --user start issue-watcher.service 2>&1 || warning "Failed to start service"
+
+    # Check if service started
+    sleep 2
+    if systemctl --user is-active issue-watcher.service &>/dev/null; then
+        success "Issue watcher service installed and started"
+    else
+        warning "Issue watcher service installed but not running"
+        info "Start manually with: systemctl --user start issue-watcher.service"
+    fi
+
+    echo ""
 
     section "Installation Complete!"
 
@@ -166,35 +405,281 @@ main() {
     echo -e "${GREEN}║              Setup Wizard Completed! 🎉                ║${NC}"
     echo -e "${GREEN}╚════════════════════════════════════════════════════════╝${NC}"
     echo ""
-
-    echo "Next steps:"
-    echo ""
-    echo "  1. Read the documentation:"
-    echo "     ${CYAN}cat CLAUDE.md${NC}"
-    echo ""
-    echo "  2. Create your first automated task:"
-    echo "     ${CYAN}gh issue create --template task \\${NC}"
-    echo "     ${CYAN}  --title \"[Task]: Add health bar\" \\${NC}"
-    echo "     ${CYAN}  --label \"ready\"${NC}"
-    echo ""
-    echo "  3. Monitor progress:"
-    echo "     ${CYAN}./wizard.sh --status${NC}"
+    echo "┌─────────────────────────────────────────────┐"
+    echo "│  ✅ Installation Complete!                  │"
+    echo "│                                             │"
+    echo "│  📋 Issue Watcher: $(systemctl --user is-active issue-watcher.service &>/dev/null && echo "Active     " || echo "Inactive   ")                 │"
+    echo "│  🤖 Agent Slots: 1 available                │"
+    $([ "$NOTIFICATIONS_ENABLED" = true ] && echo "│  🔔 Notifications: ntfy.sh/$NTFY_TOPIC      │")
+    echo "│                                             │"
+    echo "│  🎯 Next Steps:                             │"
+    echo "│                                             │"
+    echo "│  1. Create your first task:                 │"
+    echo "│     gh issue create --template task \\       │"
+    echo "│       --title \"Add player health\" \\        │"
+    echo "│       --label \"ready\"                       │"
+    echo "│                                             │"
+    echo "│  2. Watch progress:                         │"
+    echo "│     ./wizard.sh --status                    │"
+    echo "│                                             │"
+    echo "│  3. Check system health:                    │"
+    echo "│     ./wizard.sh --health                    │"
+    echo "│                                             │"
+    echo "│  📚 Documentation: ./Docs/README.md         │"
+    echo "│  🆘 Help: ./wizard.sh --help                │"
+    echo "│                                             │"
+    echo "└─────────────────────────────────────────────┘"
     echo ""
     echo -e "${MAGENTA}🦜 Fly lazy, code smart!${NC}"
+    echo ""
+}
+
+# Status command
+cmd_status() {
+    show_logo
+    section "Lazy_Bird Status Report"
+
+    # Check if config exists
+    if [ ! -f "$HOME/.config/lazy_birtd/config.yml" ]; then
+        error "Configuration not found"
+        echo "Run ./wizard.sh to set up Lazy_Bird"
+        exit 1
+    fi
+
+    echo "📊 System Health"
+    echo ""
+
+    # Check issue watcher
+    if systemctl --user is-active issue-watcher.service &>/dev/null; then
+        success "Issue Watcher: Running"
+        LAST_CHECK=$(journalctl --user -u issue-watcher.service -n 1 --no-pager 2>/dev/null | tail -1 | awk '{print $1, $2, $3}')
+        info "  Last check: $LAST_CHECK"
+    else
+        error "Issue Watcher: Not running"
+        info "  Start with: systemctl --user start issue-watcher.service"
+    fi
+    echo ""
+
+    # Check queue
+    QUEUE_DIR="$HOME/.config/lazy_birtd/queue"
+    if [ -d "$QUEUE_DIR" ]; then
+        QUEUE_COUNT=$(find "$QUEUE_DIR" -name "task-*.json" 2>/dev/null | wc -l)
+        if [ "$QUEUE_COUNT" -gt 0 ]; then
+            info "📋 Task Queue: $QUEUE_COUNT tasks pending"
+            echo ""
+            echo "Pending tasks:"
+            find "$QUEUE_DIR" -name "task-*.json" | while read task_file; do
+                TASK_ID=$(basename "$task_file" | sed 's/task-\(.*\)\.json/\1/')
+                TASK_TITLE=$(jq -r '.title' "$task_file" 2>/dev/null || echo "Unknown")
+                echo "  - #$TASK_ID: $TASK_TITLE"
+            done
+        else
+            success "📋 Task Queue: Empty (no pending tasks)"
+        fi
+    else
+        warning "📋 Task Queue: Directory not found"
+    fi
+    echo ""
+
+    # Check recent logs
+    LOG_DIR="$HOME/.config/lazy_birtd/logs"
+    if [ -d "$LOG_DIR" ]; then
+        RECENT_LOGS=$(find "$LOG_DIR" -name "agent-task-*.log" -mtime -1 2>/dev/null | wc -l)
+        if [ "$RECENT_LOGS" -gt 0 ]; then
+            info "📊 Recent Activity: $RECENT_LOGS tasks in last 24h"
+            echo ""
+            echo "Recent logs:"
+            find "$LOG_DIR" -name "agent-task-*.log" -mtime -1 | head -5 | while read log_file; do
+                TASK_ID=$(basename "$log_file" | sed 's/agent-task-\(.*\)\.log/\1/')
+                echo "  - Task #$TASK_ID: $log_file"
+            done
+        else
+            info "📊 Recent Activity: No tasks in last 24h"
+        fi
+    fi
+    echo ""
+
+    # Check resource usage
+    TOTAL_RAM=$(free -g | awk '/^Mem:/{print $2}')
+    USED_RAM=$(free -g | awk '/^Mem:/{print $3}')
+    RAM_PERCENT=$((USED_RAM * 100 / TOTAL_RAM))
+
+    info "💾 Resource Usage"
+    echo "  RAM: ${USED_RAM}GB / ${TOTAL_RAM}GB ($RAM_PERCENT%)"
+    echo ""
+
+    # Show next steps
+    echo "Next commands:"
+    echo "  ./wizard.sh --health    - Run health checks"
+    echo "  journalctl --user -u issue-watcher.service -f  - View live logs"
+    echo ""
+}
+
+# Health command
+cmd_health() {
+    show_logo
+    section "Health Diagnostics"
+
+    echo "🔍 Running health checks..."
+    echo ""
+
+    CHECKS_PASSED=0
+    CHECKS_FAILED=0
+
+    # Check 1: Configuration file
+    echo -n "Config file... "
+    if [ -f "$HOME/.config/lazy_birtd/config.yml" ]; then
+        echo -e "${GREEN}✓${NC}"
+        ((CHECKS_PASSED++))
+    else
+        echo -e "${RED}✗${NC}"
+        ((CHECKS_FAILED++))
+    fi
+
+    # Check 2: Secrets
+    echo -n "API token... "
+    if [ -f "$HOME/.config/lazy_birtd/secrets/github_token" ] || [ -f "$HOME/.config/lazy_birtd/secrets/gitlab_token" ]; then
+        # Check permissions
+        TOKEN_FILE=$(find "$HOME/.config/lazy_birtd/secrets/" -name "*_token" | head -1)
+        PERMS=$(stat -c "%a" "$TOKEN_FILE")
+        if [ "$PERMS" = "600" ]; then
+            echo -e "${GREEN}✓${NC}"
+            ((CHECKS_PASSED++))
+        else
+            echo -e "${YELLOW}⚠${NC} (wrong permissions: $PERMS)"
+            ((CHECKS_FAILED++))
+        fi
+    else
+        echo -e "${RED}✗${NC}"
+        ((CHECKS_FAILED++))
+    fi
+
+    # Check 3: Issue watcher service
+    echo -n "Issue watcher service... "
+    if systemctl --user is-active issue-watcher.service &>/dev/null; then
+        echo -e "${GREEN}✓${NC}"
+        ((CHECKS_PASSED++))
+    else
+        echo -e "${RED}✗${NC}"
+        ((CHECKS_FAILED++))
+    fi
+
+    # Check 4: Scripts exist
+    echo -n "Agent runner script... "
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    if [ -f "$SCRIPT_DIR/scripts/agent-runner.sh" ]; then
+        echo -e "${GREEN}✓${NC}"
+        ((CHECKS_PASSED++))
+    else
+        echo -e "${RED}✗${NC}"
+        ((CHECKS_FAILED++))
+    fi
+
+    # Check 5: Issue watcher script
+    echo -n "Issue watcher script... "
+    if [ -f "$SCRIPT_DIR/scripts/issue-watcher.py" ]; then
+        echo -e "${GREEN}✓${NC}"
+        ((CHECKS_PASSED++))
+    else
+        echo -e "${RED}✗${NC}"
+        ((CHECKS_FAILED++))
+    fi
+
+    # Check 6: Claude CLI
+    echo -n "Claude Code CLI... "
+    if command -v claude &>/dev/null; then
+        echo -e "${GREEN}✓${NC}"
+        ((CHECKS_PASSED++))
+    else
+        echo -e "${RED}✗${NC}"
+        ((CHECKS_FAILED++))
+    fi
+
+    # Check 7: Git
+    echo -n "Git... "
+    if command -v git &>/dev/null; then
+        echo -e "${GREEN}✓${NC}"
+        ((CHECKS_PASSED++))
+    else
+        echo -e "${RED}✗${NC}"
+        ((CHECKS_FAILED++))
+    fi
+
+    # Check 8: GitHub CLI
+    echo -n "GitHub CLI... "
+    if command -v gh &>/dev/null; then
+        # Test authentication
+        if gh auth status &>/dev/null; then
+            echo -e "${GREEN}✓${NC}"
+            ((CHECKS_PASSED++))
+        else
+            echo -e "${YELLOW}⚠${NC} (not authenticated)"
+            ((CHECKS_FAILED++))
+        fi
+    else
+        echo -e "${RED}✗${NC}"
+        ((CHECKS_FAILED++))
+    fi
+
+    # Check 9: Project path
+    echo -n "Godot project path... "
+    if [ -f "$HOME/.config/lazy_birtd/config.yml" ]; then
+        PROJECT_PATH=$(grep "godot_project_path:" "$HOME/.config/lazy_birtd/config.yml" | awk '{print $2}')
+        if [ -d "$PROJECT_PATH" ]; then
+            echo -e "${GREEN}✓${NC}"
+            ((CHECKS_PASSED++))
+        else
+            echo -e "${RED}✗${NC}"
+            ((CHECKS_FAILED++))
+        fi
+    else
+        echo -e "${RED}✗${NC}"
+        ((CHECKS_FAILED++))
+    fi
+
+    # Check 10: RAM
+    echo -n "System RAM... "
+    TOTAL_RAM=$(free -g | awk '/^Mem:/{print $2}')
+    if [ "$TOTAL_RAM" -ge 8 ]; then
+        echo -e "${GREEN}✓${NC} (${TOTAL_RAM}GB)"
+        ((CHECKS_PASSED++))
+    else
+        echo -e "${YELLOW}⚠${NC} (${TOTAL_RAM}GB, 8GB+ recommended)"
+        ((CHECKS_FAILED++))
+    fi
+
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "Results: $CHECKS_PASSED passed, $CHECKS_FAILED failed"
+    echo ""
+
+    if [ "$CHECKS_FAILED" -eq 0 ]; then
+        success "Overall Health: HEALTHY ✅"
+        echo ""
+        echo "Your system is ready to process tasks!"
+    elif [ "$CHECKS_FAILED" -le 2 ]; then
+        warning "Overall Health: DEGRADED ⚠️"
+        echo ""
+        echo "Some components need attention, but system is operational."
+    else
+        error "Overall Health: UNHEALTHY ❌"
+        echo ""
+        echo "Critical issues detected. Please fix before using Lazy_Bird."
+    fi
+
+    echo ""
+    echo "For detailed logs:"
+    echo "  journalctl --user -u issue-watcher.service"
     echo ""
 }
 
 # Command handling
 case "${1:-}" in
     --status)
-        show_logo
-        section "System Status"
-        info "Status checking will be implemented in next version"
+        cmd_status
         ;;
     --health)
-        show_logo
-        section "Health Check"
-        info "Health checking will be implemented in next version"
+        cmd_health
         ;;
     --upgrade)
         show_logo
@@ -212,12 +697,12 @@ case "${1:-}" in
         echo "Usage: ./wizard.sh [command]"
         echo ""
         echo "Commands:"
-        echo "  (no args)      - Run setup wizard"
-        echo "  --status       - Show system status"
-        echo "  --health       - Run health checks"
-        echo "  --upgrade      - Upgrade to next phase"
-        echo "  --weekly-review- Generate weekly progress report"
-        echo "  --help         - Show this help"
+        echo "  (no args)        - Run setup wizard"
+        echo "  --status         - Show system status"
+        echo "  --health         - Run health checks"
+        echo "  --upgrade        - Upgrade to next phase"
+        echo "  --weekly-review  - Generate weekly progress report"
+        echo "  --help           - Show this help"
         echo ""
         ;;
     *)
