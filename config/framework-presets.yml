@@ -1,0 +1,300 @@
+# Lazy_Bird Framework Presets
+#
+# This file contains pre-configured settings for popular frameworks/languages.
+# The wizard uses these presets to auto-configure test/build commands.
+#
+# Format:
+#   preset_id:
+#     name: "Display Name"
+#     description: "Short description"
+#     test_command: "command to run tests"
+#     build_command: "command to build" (or null if not needed)
+#     lint_command: "command for linting" (optional)
+#     format_command: "command for formatting" (optional)
+#     file_extensions: [list of relevant file types]
+#     ignore_patterns: [list of patterns to exclude from git]
+#
+# To add a new preset:
+# 1. Copy an existing preset structure
+# 2. Change the preset_id (unique identifier)
+# 3. Update all fields for your framework
+# 4. Test with: ./wizard.sh
+
+presets:
+  # =========================================================================
+  # GAME ENGINES
+  # =========================================================================
+
+  godot:
+    name: "Godot Engine"
+    description: "GDScript game engine with gdUnit4 testing"
+    test_command: "godot --headless -s addons/gdUnit4/bin/GdUnitCmdTool.gd --test-suite all"
+    build_command: null
+    lint_command: null
+    format_command: null
+    file_extensions: [".gd", ".tscn", ".tres", ".godot"]
+    ignore_patterns: [".godot/", ".import/", "*.import"]
+    docs_url: "https://godotengine.org/"
+
+  unity:
+    name: "Unity Engine"
+    description: "C# game engine with NUnit testing"
+    test_command: "unity-editor -runTests -testPlatform EditMode -testResults test-results.xml -batchmode -quit"
+    build_command: "unity-editor -quit -batchmode -buildTarget StandaloneLinux64"
+    lint_command: null
+    format_command: null
+    file_extensions: [".cs", ".unity", ".prefab", ".asset"]
+    ignore_patterns: ["Library/", "Temp/", "Obj/", "Build/", "Builds/"]
+    docs_url: "https://unity.com/"
+
+  unreal:
+    name: "Unreal Engine"
+    description: "C++ game engine with Automation tests"
+    test_command: "UnrealEditor -ExecCmds=\"Automation RunTests\" -buildmachine -stdout -unattended -nopause"
+    build_command: "UnrealBuildTool -TargetType=Game -Platform=Linux"
+    lint_command: null
+    format_command: null
+    file_extensions: [".cpp", ".h", ".uasset", ".umap"]
+    ignore_patterns: ["Binaries/", "Intermediate/", "Saved/", "DerivedDataCache/"]
+    docs_url: "https://www.unrealengine.com/"
+
+  bevy:
+    name: "Bevy Engine"
+    description: "Rust game engine with cargo test"
+    test_command: "cargo test --all"
+    build_command: "cargo build --release"
+    lint_command: "cargo clippy"
+    format_command: "cargo fmt"
+    file_extensions: [".rs", ".toml"]
+    ignore_patterns: ["target/", "Cargo.lock"]
+    docs_url: "https://bevyengine.org/"
+
+  # =========================================================================
+  # BACKEND FRAMEWORKS
+  # =========================================================================
+
+  django:
+    name: "Django"
+    description: "Python web framework"
+    test_command: "python manage.py test"
+    build_command: null
+    lint_command: "flake8 ."
+    format_command: "black ."
+    file_extensions: [".py", ".html", ".css", ".js"]
+    ignore_patterns: ["__pycache__/", "*.pyc", "db.sqlite3", "media/", "staticfiles/"]
+    docs_url: "https://www.djangoproject.com/"
+
+  flask:
+    name: "Flask"
+    description: "Python micro web framework"
+    test_command: "pytest tests/ -v"
+    build_command: null
+    lint_command: "flake8 ."
+    format_command: "black ."
+    file_extensions: [".py", ".html", ".css", ".js"]
+    ignore_patterns: ["__pycache__/", "*.pyc", ".pytest_cache/", "instance/"]
+    docs_url: "https://flask.palletsprojects.com/"
+
+  fastapi:
+    name: "FastAPI"
+    description: "Modern Python API framework"
+    test_command: "pytest tests/ -v"
+    build_command: null
+    lint_command: "flake8 ."
+    format_command: "black ."
+    file_extensions: [".py"]
+    ignore_patterns: ["__pycache__/", "*.pyc", ".pytest_cache/"]
+    docs_url: "https://fastapi.tiangolo.com/"
+
+  express:
+    name: "Express.js"
+    description: "Node.js web framework"
+    test_command: "npm test"
+    build_command: null
+    lint_command: "npm run lint"
+    format_command: "npm run format"
+    file_extensions: [".js", ".ts", ".json"]
+    ignore_patterns: ["node_modules/", "dist/", "coverage/"]
+    docs_url: "https://expressjs.com/"
+
+  rails:
+    name: "Ruby on Rails"
+    description: "Ruby web framework"
+    test_command: "bundle exec rspec"
+    build_command: null
+    lint_command: "bundle exec rubocop"
+    format_command: "bundle exec rubocop -a"
+    file_extensions: [".rb", ".erb", ".haml"]
+    ignore_patterns: ["log/", "tmp/", "vendor/bundle/"]
+    docs_url: "https://rubyonrails.org/"
+
+  # =========================================================================
+  # FRONTEND FRAMEWORKS
+  # =========================================================================
+
+  react:
+    name: "React"
+    description: "JavaScript UI library"
+    test_command: "npm test -- --watchAll=false"
+    build_command: "npm run build"
+    lint_command: "npm run lint"
+    format_command: "npm run format"
+    file_extensions: [".js", ".jsx", ".ts", ".tsx", ".css", ".scss"]
+    ignore_patterns: ["node_modules/", "build/", "dist/", "coverage/"]
+    docs_url: "https://react.dev/"
+
+  vue:
+    name: "Vue.js"
+    description: "Progressive JavaScript framework"
+    test_command: "npm test"
+    build_command: "npm run build"
+    lint_command: "npm run lint"
+    format_command: "npm run format"
+    file_extensions: [".vue", ".js", ".ts", ".css", ".scss"]
+    ignore_patterns: ["node_modules/", "dist/", "coverage/"]
+    docs_url: "https://vuejs.org/"
+
+  angular:
+    name: "Angular"
+    description: "TypeScript web framework"
+    test_command: "ng test --watch=false"
+    build_command: "ng build --prod"
+    lint_command: "ng lint"
+    format_command: "npm run format"
+    file_extensions: [".ts", ".html", ".css", ".scss"]
+    ignore_patterns: ["node_modules/", "dist/", "coverage/", ".angular/"]
+    docs_url: "https://angular.io/"
+
+  svelte:
+    name: "Svelte"
+    description: "Compiler-based UI framework"
+    test_command: "npm test"
+    build_command: "npm run build"
+    lint_command: "npm run lint"
+    format_command: "npm run format"
+    file_extensions: [".svelte", ".js", ".ts"]
+    ignore_patterns: ["node_modules/", "build/", "dist/", ".svelte-kit/"]
+    docs_url: "https://svelte.dev/"
+
+  # =========================================================================
+  # PROGRAMMING LANGUAGES (General)
+  # =========================================================================
+
+  python:
+    name: "Python (pytest)"
+    description: "Python with pytest testing"
+    test_command: "pytest tests/ -v --cov"
+    build_command: null
+    lint_command: "flake8 ."
+    format_command: "black ."
+    file_extensions: [".py"]
+    ignore_patterns: ["__pycache__/", "*.pyc", ".pytest_cache/", "venv/", ".venv/"]
+    docs_url: "https://docs.python.org/"
+
+  rust:
+    name: "Rust"
+    description: "Systems programming language"
+    test_command: "cargo test --all"
+    build_command: "cargo build --release"
+    lint_command: "cargo clippy"
+    format_command: "cargo fmt"
+    file_extensions: [".rs", ".toml"]
+    ignore_patterns: ["target/", "Cargo.lock"]
+    docs_url: "https://www.rust-lang.org/"
+
+  go:
+    name: "Go"
+    description: "Google's systems language"
+    test_command: "go test ./..."
+    build_command: "go build -o bin/app"
+    lint_command: "golint ./..."
+    format_command: "gofmt -w ."
+    file_extensions: [".go", ".mod", ".sum"]
+    ignore_patterns: ["bin/", "vendor/"]
+    docs_url: "https://go.dev/"
+
+  nodejs:
+    name: "Node.js (Jest)"
+    description: "JavaScript runtime with Jest"
+    test_command: "npm test"
+    build_command: "npm run build"
+    lint_command: "npm run lint"
+    format_command: "npm run format"
+    file_extensions: [".js", ".ts", ".json"]
+    ignore_patterns: ["node_modules/", "dist/", "build/", "coverage/"]
+    docs_url: "https://nodejs.org/"
+
+  cpp:
+    name: "C/C++"
+    description: "C++ with CMake"
+    test_command: "make test"
+    build_command: "make"
+    lint_command: "cppcheck --enable=all ."
+    format_command: "clang-format -i **/*.cpp **/*.h"
+    file_extensions: [".cpp", ".h", ".c", ".hpp"]
+    ignore_patterns: ["build/", "*.o", "*.out"]
+    docs_url: "https://isocpp.org/"
+
+  java:
+    name: "Java (Maven)"
+    description: "Java with Maven build system"
+    test_command: "mvn test"
+    build_command: "mvn package"
+    lint_command: "mvn checkstyle:check"
+    format_command: null
+    file_extensions: [".java", ".xml", ".properties"]
+    ignore_patterns: ["target/", ".classpath", ".project"]
+    docs_url: "https://www.oracle.com/java/"
+
+  # =========================================================================
+  # CUSTOM / TEMPLATE
+  # =========================================================================
+
+  custom:
+    name: "Custom Project"
+    description: "Generic template for custom configurations"
+    test_command: "make test"
+    build_command: "make build"
+    lint_command: null
+    format_command: null
+    file_extensions: []
+    ignore_patterns: ["build/", "dist/", "*.log"]
+    docs_url: null
+
+# ============================================================================
+# USAGE IN WIZARD
+# ============================================================================
+#
+# The wizard reads this file and presents frameworks to the user:
+#
+# 1. User selects framework category (Game Engine, Backend, Frontend, Language)
+# 2. Wizard shows relevant presets from that category
+# 3. User selects specific preset (e.g., "django")
+# 4. Wizard copies preset values to config.yml:
+#    - test_command
+#    - build_command
+#    - lint_command
+#    - format_command
+# 5. User can modify commands before saving
+#
+# Example wizard code to read this file:
+#
+#   import yaml
+#   with open('config/framework-presets.yml') as f:
+#       presets = yaml.safe_load(f)['presets']
+#
+#   selected = presets['django']
+#   print(f"Test command: {selected['test_command']}")
+#
+# ============================================================================
+# EXTENDING THIS FILE
+# ============================================================================
+#
+# To add a new framework:
+# 1. Choose appropriate section (Game Engines, Backend, Frontend, Languages)
+# 2. Add new preset with unique ID
+# 3. Fill in all required fields
+# 4. Test with: python -c "import yaml; yaml.safe_load(open('config/framework-presets.yml'))"
+# 5. Submit PR or issue with your preset
+#
+# Community presets welcome!
